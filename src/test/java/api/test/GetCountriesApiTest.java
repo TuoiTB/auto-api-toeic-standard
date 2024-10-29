@@ -11,7 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class FirstApiTests {
+public class GetCountriesApiTest {
     @BeforeAll
     static void setUp(){
         RestAssured.baseURI = "http://localhost";
@@ -31,4 +31,19 @@ public class FirstApiTests {
         /*System.out.println(actualResponseBody);*/
         assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
         }
+
+    @Test
+    void verifyGetCountriesV2ApiResponseSchema(){
+        String responseBody = RestAssured.get("/api/v2/countries").getBody().asString();
+        System.out.println(responseBody);
+        RestAssured.get("/api/v2/countries").then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-v2-json-schema.json"));
+    }
+    @Test
+    void verifyGetCountriesV2ApiReturnCorrectData(){
+        String expected = GetCountriesData.ALL_COUNTRIES_WITH_GDP;
+        Response actualResponse = RestAssured.get("/api/v2/countries");
+        String actualResponseBody = actualResponse.asString();
+        /*System.out.println(actualResponseBody);*/
+        assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
+    }
 }
