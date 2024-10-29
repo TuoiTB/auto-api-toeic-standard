@@ -1,10 +1,15 @@
-package test;
+package api.test;
 
+import api.data.GetCountriesData;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static net.javacrumbs.jsonunit.core.Option.IGNORING_ARRAY_ORDER;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class FirstApiTests {
     @BeforeAll
@@ -20,10 +25,10 @@ public class FirstApiTests {
     }
     @Test
     void verifyGetCountriesApiReturnCorrectData(){
-        String expected = """
-        [{"name":"Viet Nam","code":"VN"},{"name":"USA","code":"US"},{"name":"Canada","code":"CA"},{"name":"UK","code":"GB"},{"name":"France","code":"FR"},{"name":"Japan","code":"JP"},{"name":"India","code":"IN"},{"name":"China","code":"CN"},{"name":"Brazil","code":"BR"}]
-                """;
-        RestAssured.get("/api/v1/countries").then().statusCode(200);
-
+        String expected = GetCountriesData.ALL_COUNTRIES;
+        Response actualResponse = RestAssured.get("/api/v1/countries"); //then().statusCode(200);
+        String actualResponseBody = actualResponse.asString();
+        /*System.out.println(actualResponseBody);*/
+        assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
         }
 }
