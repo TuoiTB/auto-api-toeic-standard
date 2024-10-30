@@ -53,4 +53,10 @@ public class GetCountriesData {
                  }
             ]
             """;
+    public static final String COUNTRY_BY_CODE = """
+            {
+                "name": "Viet Nam",
+                "code": "VN"
+            }
+            """;
 }
