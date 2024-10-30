@@ -12,6 +12,8 @@ import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInC
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class GetCountriesApiTest {
+    private static final String GET_COUNTRIES_PATH = "/api/v1/countries";
+    private static final String GET_COUNTRIES_PATH_V2 = "/api/v2/countries";
     @BeforeAll
     static void setUp(){
         RestAssured.baseURI = "http://localhost";
@@ -19,14 +21,14 @@ public class GetCountriesApiTest {
     }
     @Test
     void verifyGetCountriesApiResponseSchema(){
-        String responseBody = RestAssured.get("/api/v1/countries").getBody().asString();
+        String responseBody = RestAssured.get(GET_COUNTRIES_PATH).getBody().asString();
         System.out.println(responseBody);
-        RestAssured.get("/api/v1/countries").then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-json-schema.json"));
+        RestAssured.get(GET_COUNTRIES_PATH).then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-json-schema.json"));
     }
     @Test
     void verifyGetCountriesApiReturnCorrectData(){
         String expected = GetCountriesData.ALL_COUNTRIES;
-        Response actualResponse = RestAssured.get("/api/v1/countries"); //then().statusCode(200);
+        Response actualResponse = RestAssured.get(GET_COUNTRIES_PATH); //then().statusCode(200);
         String actualResponseBody = actualResponse.asString();
         /*System.out.println(actualResponseBody);*/
         assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
@@ -34,14 +36,14 @@ public class GetCountriesApiTest {
 
     @Test
     void verifyGetCountriesV2ApiResponseSchema(){
-        String responseBody = RestAssured.get("/api/v2/countries").getBody().asString();
+        String responseBody = RestAssured.get(GET_COUNTRIES_PATH_V2).getBody().asString();
         System.out.println(responseBody);
-        RestAssured.get("/api/v2/countries").then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-v2-json-schema.json"));
+        RestAssured.get(GET_COUNTRIES_PATH_V2).then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-v2-json-schema.json"));
     }
     @Test
     void verifyGetCountriesV2ApiReturnCorrectData(){
         String expected = GetCountriesData.ALL_COUNTRIES_WITH_GDP;
-        Response actualResponse = RestAssured.get("/api/v2/countries");
+        Response actualResponse = RestAssured.get(GET_COUNTRIES_PATH_V2);
         String actualResponseBody = actualResponse.asString();
         /*System.out.println(actualResponseBody);*/
         assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
