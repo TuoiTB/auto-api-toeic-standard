@@ -2,6 +2,9 @@ package api.test;
 
 import api.data.GetCountriesData;
 import api.model.country.Country;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,14 +61,9 @@ public class GetCountriesApiTest {
         String actualResponseBody = actualResponse.asString();
         assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
     }
-    static Stream<Country> countriesProvider(){
-        List<Country> countries = new ArrayList<>();
-        Country vietNam = new Country("Viet Nam", "VN");
-        Country usa = new Country("USA", "US");
-        Country canada = new Country("Canada", "CA");
-        countries.add(vietNam);
-        countries.add(usa);
-        countries.add(canada);
+    static Stream<Country> countriesProvider() throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<Country> countries = objectMapper.readValue(GetCountriesData.ALL_COUNTRIES, new TypeReference<List<Country>>(){});
         return countries.stream();
     }
     @Test
@@ -88,4 +86,5 @@ public class GetCountriesApiTest {
         String actualResponseBody = actualResponse.asString();
         assertThat(actualResponseBody, jsonEquals(country).when(IGNORING_ARRAY_ORDER));
     }
+
 }
