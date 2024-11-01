@@ -17,6 +17,8 @@ dependencies {
     testImplementation 'io.rest-assured:json-schema-validator:5.5.0'
     testImplementation 'net.javacrumbs.json-unit:json-unit:3.4.1'
     testImplementation 'net.javacrumbs.json-unit:json-unit-assertj:3.4.1'
+    testCompileOnly 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
 
 test {
