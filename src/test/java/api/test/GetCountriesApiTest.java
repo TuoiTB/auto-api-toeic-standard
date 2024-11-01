@@ -28,7 +28,7 @@ public class GetCountriesApiTest {
     private static final String GET_COUNTRIES_PATH = "/api/v1/countries";
     private static final String GET_COUNTRIES_PATH_V2 = "/api/v2/countries";
     private static final String GET_COUNTRIES_BY_CODE_PATH = "/api/v1/countries/{code}";
-    //private static final String GET_COUNTRIES_PATH_BY_CODE = "/api/v1/countries/{code}";
+    private static final String GET_COUNTRIES_BY_FILTER = "/api/v3/countries";
     @BeforeAll
     static void setUp(){
         RestAssured.baseURI = "http://localhost";
@@ -86,5 +86,14 @@ public class GetCountriesApiTest {
         String actualResponseBody = actualResponse.asString();
         assertThat(actualResponseBody, jsonEquals(country).when(IGNORING_ARRAY_ORDER));
     }
-
+    @Test
+    void verifyGetCountryApiReturnDataWhenGivenLessThanOperator(){
+        String expected = GetCountriesData.COUNTRY_BY_CODE;
+        Map<String, String> params = new HashMap<>();
+        params.put("code", "VN");
+        Response actualResponse = RestAssured.given().log().all().get(GET_COUNTRIES_BY_CODE_PATH, params);
+        assertThat(200, equalTo(actualResponse.statusCode()));
+        String actualResponseBody = actualResponse.asString();
+        assertThat(actualResponseBody, jsonEquals(expected));
+    }
 }
