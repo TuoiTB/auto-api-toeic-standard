@@ -16,10 +16,15 @@ public class Country {
     /*public Country() {
     }  thay thế bằng annotation của lombok: @NoArgsConstructor */
 
+
    /* public Country(String name, String code) {
         this.name = name;
         this.code = code;
     }* @AllArgsConstructor giúp generate ra constructor/
+    */
+
+
+
     /*    public String getName() {
         return name;
     }
