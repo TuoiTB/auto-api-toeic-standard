@@ -2,6 +2,7 @@ package api.test;
 
 import api.data.GetCountriesData;
 import api.model.country.Country;
+import api.model.country.CountryPagination;
 import api.model.country.CountryVersionTwo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -34,6 +35,7 @@ public class GetCountriesApiTest {
     private static final String GET_COUNTRIES_PATH_V2 = "/api/v2/countries";
     private static final String GET_COUNTRIES_BY_CODE_PATH = "/api/v1/countries/{code}";
     private static final String GET_COUNTRIES_BY_FILTER = "/api/v3/countries";
+    private static final String GET_COUNTRIES_PAGINATION = "/api/v4/countries";
 
     @BeforeAll
     static void setUp() {
@@ -197,7 +199,7 @@ public class GetCountriesApiTest {
     }
 
     //-------------------Refactor bằng chat gpt
-    private void verifyGetCountryApiReturnDataWithOperator(String operator, float gdp, Matcher<Float> condition) {
+    /*private void verifyGetCountryApiReturnDataWithOperator(String operator, float gdp, Matcher<Float> condition) {
         // Prepare the query parameter for operator
         String operatorParam = operator.equals("==") ? URLEncoder.encode(operator) : operator;
         String path = String.format("%s?gdp=%f&operator=%s", GET_COUNTRIES_BY_FILTER, gdp, operatorParam);
@@ -216,7 +218,7 @@ public class GetCountriesApiTest {
         countries.forEach(country -> assertThat(country.getGdp(), condition));
     }
 
-    @ParameterizedTest
+    *//*@ParameterizedTest
     @ValueSource(strings = {"<", ">", "<=", ">=", "==", "!="})
     void verifyGetCountryApiReturnDataWithVariousOperators(String operator) {
         float gdp = 5000f;
@@ -249,7 +251,7 @@ public class GetCountriesApiTest {
         // Call the helper method
         verifyGetCountryApiReturnDataWithOperator(operator, gdp, condition);
     }
-
+*/
     //------------------------end--------------------------------------
     //Dùng Stream để tạo bộ dữ liệu, dùng Provider để lấy dữ liệu trong bộ dữ liệu đã tạo
     static Stream<Map<String, String>> getCountriesByFilterProvider() throws JsonProcessingException {
@@ -281,11 +283,57 @@ public class GetCountriesApiTest {
                                 case ">=" -> greaterThanOrEqualTo(expectedGdp);
                                 case "==" -> equalTo(expectedGdp);
                                 case "!=" -> not(equalTo(expectedGdp));
-                               default -> equalTo(expectedGdp);
+                                default -> equalTo(expectedGdp);
                             };
                             assertThat(country.getGdp(), matcher);
                         }
                 );
 
+    }
+
+    @Test
+    void verifyGetCountriesPagination() {
+        int pageSize = 3;
+        Response actualResponseFirstPage = RestAssured.given().log().all()
+                .queryParam("page", 1)
+                .queryParam("size", pageSize)
+                .get(GET_COUNTRIES_PAGINATION);
+        CountryPagination countryPaginationFirstPage = actualResponseFirstPage.as(new TypeRef<CountryPagination>() {
+        });
+
+        Response actualResponseSecondPage = RestAssured.given().log().all()
+                .queryParam("page", 2)
+                .queryParam("size", pageSize)
+                .get(GET_COUNTRIES_PAGINATION);
+        CountryPagination countryPaginationSecondPage = actualResponseSecondPage.as(new TypeRef<CountryPagination>() {
+        });
+
+        assertThat(countryPaginationFirstPage.getData().size(), equalTo(pageSize));
+        assertThat(countryPaginationSecondPage.getData().size(), equalTo(pageSize));
+        assertThat(countryPaginationFirstPage.getData().containsAll(countryPaginationSecondPage.getData()), is(false));
+
+        int sizeOfLastPage = countryPaginationFirstPage.getTotal() % pageSize;//Lấy phần dư
+        int lastPage = countryPaginationFirstPage.getTotal() / pageSize; //Lấy phần nguyên
+        if (sizeOfLastPage > 0){
+            lastPage++;
+        }
+        if (sizeOfLastPage == 0){
+            sizeOfLastPage = pageSize;
+        }
+        Response actualResponseLastPage = RestAssured.given().log().all()
+                .queryParam("page", lastPage)
+                .queryParam("size", pageSize)
+                .get(GET_COUNTRIES_PAGINATION);
+        CountryPagination countryPaginationLastPage = actualResponseLastPage.as(new TypeRef<CountryPagination>() {
+        });
+        assertThat(countryPaginationLastPage.getData().size(), equalTo(sizeOfLastPage));
+
+        Response actualResponseLastPagePlus = RestAssured.given().log().all()
+                .queryParam("page", lastPage + 1)
+                .queryParam("size", pageSize)
+                .get(GET_COUNTRIES_PAGINATION);
+        CountryPagination countryPaginationLastPagePlus = actualResponseLastPagePlus.as(new TypeRef<CountryPagination>() {
+        });
+        assertThat(countryPaginationLastPagePlus.getData().size(), equalTo(0));
     }
 }
