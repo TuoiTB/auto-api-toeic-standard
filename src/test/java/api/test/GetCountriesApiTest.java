@@ -290,23 +290,22 @@ public class GetCountriesApiTest {
                 );
 
     }
+    //---------------------------------
 
+    private CountryPagination getCountryPagination(int page, int size) {
+        Response actualResponsePage = RestAssured.given().log().all()
+                .queryParam("page", page)
+                .queryParam("size", size)
+                .get(GET_COUNTRIES_PAGINATION);
+        return actualResponsePage.as(new TypeRef<CountryPagination>() {
+        });
+    }
     @Test
     void verifyGetCountriesPagination() {
         int pageSize = 3;
-        Response actualResponseFirstPage = RestAssured.given().log().all()
-                .queryParam("page", 1)
-                .queryParam("size", pageSize)
-                .get(GET_COUNTRIES_PAGINATION);
-        CountryPagination countryPaginationFirstPage = actualResponseFirstPage.as(new TypeRef<CountryPagination>() {
-        });
+        CountryPagination countryPaginationFirstPage = getCountryPagination(1, pageSize);
 
-        Response actualResponseSecondPage = RestAssured.given().log().all()
-                .queryParam("page", 2)
-                .queryParam("size", pageSize)
-                .get(GET_COUNTRIES_PAGINATION);
-        CountryPagination countryPaginationSecondPage = actualResponseSecondPage.as(new TypeRef<CountryPagination>() {
-        });
+        CountryPagination countryPaginationSecondPage = getCountryPagination(2, pageSize);
 
         assertThat(countryPaginationFirstPage.getData().size(), equalTo(pageSize));
         assertThat(countryPaginationSecondPage.getData().size(), equalTo(pageSize));
@@ -320,20 +319,11 @@ public class GetCountriesApiTest {
         if (sizeOfLastPage == 0){
             sizeOfLastPage = pageSize;
         }
-        Response actualResponseLastPage = RestAssured.given().log().all()
-                .queryParam("page", lastPage)
-                .queryParam("size", pageSize)
-                .get(GET_COUNTRIES_PAGINATION);
-        CountryPagination countryPaginationLastPage = actualResponseLastPage.as(new TypeRef<CountryPagination>() {
-        });
+        CountryPagination countryPaginationLastPage = getCountryPagination(lastPage, pageSize);
         assertThat(countryPaginationLastPage.getData().size(), equalTo(sizeOfLastPage));
 
-        Response actualResponseLastPagePlus = RestAssured.given().log().all()
-                .queryParam("page", lastPage + 1)
-                .queryParam("size", pageSize)
-                .get(GET_COUNTRIES_PAGINATION);
-        CountryPagination countryPaginationLastPagePlus = actualResponseLastPagePlus.as(new TypeRef<CountryPagination>() {
-        });
+        CountryPagination countryPaginationLastPagePlus = getCountryPagination(lastPage + 1, pageSize);
         assertThat(countryPaginationLastPagePlus.getData().size(), equalTo(0));
     }
+
 }
