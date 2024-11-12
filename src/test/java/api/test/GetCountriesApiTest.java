@@ -3,6 +3,7 @@ package api.test;
 import api.data.GetCountriesData;
 import api.model.country.Country;
 import api.model.country.CountryPagination;
+import api.model.country.CountryVersionThree;
 import api.model.country.CountryVersionTwo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static api.data.GetCountriesData.COUNTRY_WITH_PRIVATE_KEY;
 import static net.javacrumbs.jsonunit.core.Option.IGNORING_ARRAY_ORDER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
@@ -36,6 +38,7 @@ public class GetCountriesApiTest {
     private static final String GET_COUNTRIES_BY_CODE_PATH = "/api/v1/countries/{code}";
     private static final String GET_COUNTRIES_BY_FILTER = "/api/v3/countries";
     private static final String GET_COUNTRIES_PAGINATION = "/api/v4/countries";
+    private static final String GET_COUNTRIES_PRIVATE_KEY = "/api/v5/countries";
 
     @BeforeAll
     static void setUp() {
@@ -325,5 +328,21 @@ public class GetCountriesApiTest {
         CountryPagination countryPaginationLastPagePlus = getCountryPagination(lastPage + 1, pageSize);
         assertThat(countryPaginationLastPagePlus.getData().size(), equalTo(0));
     }
+//----------------------------------------------------------------------------------
+    @Test
+    void verifyGetCountriesWithPrivateKeyResponseJsonSchema(){
+        String responseBody = RestAssured.get(GET_COUNTRIES_PRIVATE_KEY).getBody().asString();
+        System.out.println(responseBody);
+        RestAssured.get(GET_COUNTRIES_PRIVATE_KEY).then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-with-private-key-json-schema.json"));
+    }
+    @Test
+    void verifyGetCountriesWithPrivateKey(){
+        Response actualResponse = RestAssured.given().log().all()
+                .header("api-key","private")
+                .get(GET_COUNTRIES_PRIVATE_KEY);
+        List<CountryVersionThree> countries = actualResponse.as(new TypeRef<List<CountryVersionThree>>() {
+        });
+        assertThat(actualResponse.asString(), jsonEquals(COUNTRY_WITH_PRIVATE_KEY).when(IGNORING_ARRAY_ORDER));
 
+    }
 }
