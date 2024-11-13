@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -23,13 +22,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static api.data.GetCountriesData.COUNTRY_WITH_PRIVATE_KEY;
-import static net.javacrumbs.jsonunit.core.Option.IGNORING_ARRAY_ORDER;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static net.javacrumbs.jsonunit.core.Option.IGNORING_ARRAY_ORDER;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-public class GetCountriesApiTest {
+public class GetCountriesApiCustomizedModel {
     private static final String GET_COUNTRIES_PATH = "/api/v1/countries";
     private static final String GET_COUNTRIES_PATH_V2 = "/api/v2/countries";
     private static final String GET_COUNTRIES_BY_CODE_PATH = "/api/v1/countries/{code}";
@@ -49,15 +48,6 @@ public class GetCountriesApiTest {
         System.out.println(responseBody);
         RestAssured.get(GET_COUNTRIES_PATH).then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-json-schema.json"));
     }
-
-    @Test
-    void verifyGetCountriesApiReturnCorrectData() {
-        String expected = GetCountriesData.ALL_COUNTRIES;
-        Response actualResponse = RestAssured.get(GET_COUNTRIES_PATH);
-        String actualResponseBody = actualResponse.asString();
-        assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
-    }
-
     @Test
     void verifyGetCountriesV2ApiResponseSchema() {
         String responseBody = RestAssured.get(GET_COUNTRIES_PATH_V2).getBody().asString();
@@ -73,9 +63,9 @@ public class GetCountriesApiTest {
         assertThat(actualResponseBody, jsonEquals(expected).when(IGNORING_ARRAY_ORDER));
     }
 
-    static Stream<Country> countriesProvider() throws JsonProcessingException {
+    static Stream<CountryCustomizedModel> countriesProvider() throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<Country> countries = objectMapper.readValue(GetCountriesData.ALL_COUNTRIES, new TypeReference<List<Country>>() {
+        List<CountryCustomizedModel> countries = objectMapper.readValue(GetCountriesData.ALL_COUNTRIES, new TypeReference<List<CountryCustomizedModel>>() {
         });
         return countries.stream();
     }
@@ -93,13 +83,12 @@ public class GetCountriesApiTest {
 
     @ParameterizedTest
     @MethodSource("countriesProvider")
-    void verifyGetCountriesByCodeApiReturnCorrectData(Country country) {
+    void verifyGetCountriesByCodeApiReturnCorrectData(CountryCustomizedModel country) {
         Map<String, String> params = new HashMap<>();
         params.put("code", country.getCode());
         Response actualResponse = RestAssured.given().log().all().get(GET_COUNTRIES_BY_CODE_PATH, params);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        String actualResponseBody = actualResponse.asString();
-        //CountryCustomizedModel actualResponseBody = actualResponse.as(CountryCustomizedModel.class);
+        CountryCustomizedModel actualResponseBody = actualResponse.as(CountryCustomizedModel.class);
         assertThat((String.format("Actual: %s\n Expected: %s\n", actualResponseBody, country)), actualResponseBody, jsonEquals(country).when(IGNORING_ARRAY_ORDER));
     }
 
@@ -108,8 +97,7 @@ public class GetCountriesApiTest {
         String path = String.format("%s?gdp=5000&operator=<", GET_COUNTRIES_BY_FILTER);
         Response actualResponse = RestAssured.given().log().all().get(path);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        //String actualResponseBody = actualResponse.asString();
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach(country -> {
             assertThat(country.getGdp(), lessThan(5000f));
@@ -123,7 +111,7 @@ public class GetCountriesApiTest {
         Response actualResponse = RestAssured.given().log().all().get(path);
         assertThat(200, equalTo(actualResponse.statusCode()));
         //String actualResponseBody = actualResponse.asString();
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach(country -> {
             assertThat(country.getGdp(), greaterThan(5000f));
@@ -132,31 +120,17 @@ public class GetCountriesApiTest {
     }
 
     @Test
-    void verifyGetCountryApiReturnDataWithEqualOperator_1() {
+    void verifyGetCountryApiReturnDataWithEqualOperator() {
         //String path = String.format("%s?gdp=5000&operator===", GET_COUNTRIES_BY_FILTER);
 
         Response actualResponse = RestAssured.given().log().all().queryParam("gdp", 5000).queryParam("operator", "==").get(GET_COUNTRIES_BY_FILTER);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach(country -> {
             assertThat(country.getGdp(), equalTo(5000f));
         });
     }
-
-    /*@Test
-    void verifyGetCountryApiReturnDataWithEqualOperator_2() {
-        String operator = URLEncoder.encode("==");
-        String path = String.format("%s?gdp=5000&operator=%s", GET_COUNTRIES_BY_FILTER, operator);
-
-        Response actualResponse = RestAssured.given().log().all().get(path);
-        assertThat(200, equalTo(actualResponse.statusCode()));
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
-        });
-        countries.forEach(country -> {
-            assertThat(country.getGdp(), equalTo(5000f));
-        });
-    }*/
 
     @Test
     void verifyGetCountryApiReturnDataWithLessThanOrEqualOperator() {
@@ -164,7 +138,7 @@ public class GetCountriesApiTest {
         Response actualResponse = RestAssured.given().log().all().get(path);
         assertThat(200, equalTo(actualResponse.statusCode()));
         //String actualResponseBody = actualResponse.asString();
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach(country -> {
             assertThat(country.getGdp(), lessThanOrEqualTo(5000f));
@@ -177,8 +151,7 @@ public class GetCountriesApiTest {
         String path = String.format("%s?gdp=5000&operator=>=", GET_COUNTRIES_BY_FILTER);
         Response actualResponse = RestAssured.given().log().all().get(path);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        //String actualResponseBody = actualResponse.asString();
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach(country -> {
             assertThat(country.getGdp(), greaterThanOrEqualTo(5000f));
@@ -192,67 +165,12 @@ public class GetCountriesApiTest {
         Response actualResponse = RestAssured.given().log().all().get(path);
         assertThat(200, equalTo(actualResponse.statusCode()));
         //String actualResponseBody = actualResponse.asString();
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach(country -> {
             assertThat(country.getGdp(), not(equalTo(5000f)));
         });
     }
-
-    //-------------------Refactor bằng chat gpt
-    /*private void verifyGetCountryApiReturnDataWithOperator(String operator, float gdp, Matcher<Float> condition) {
-        // Prepare the query parameter for operator
-        String operatorParam = operator.equals("==") ? URLEncoder.encode(operator) : operator;
-        String path = String.format("%s?gdp=%f&operator=%s", GET_COUNTRIES_BY_FILTER, gdp, operatorParam);
-
-        // Make the request
-        Response actualResponse = RestAssured.given().log().all().get(path);
-
-        // Assert status code
-        assertThat(actualResponse.statusCode(), equalTo(200));
-
-        // Parse the response into a list of CountryVersionTwo objects
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
-        });
-
-        // Assert GDP based on the provided condition
-        countries.forEach(country -> assertThat(country.getGdp(), condition));
-    }
-
-    *//*@ParameterizedTest
-    @ValueSource(strings = {"<", ">", "<=", ">=", "==", "!="})
-    void verifyGetCountryApiReturnDataWithVariousOperators(String operator) {
-        float gdp = 5000f;
-
-        // Determine the matching condition for each operator
-        Matcher<Float> condition;
-        switch (operator) {
-            case "<":
-                condition = lessThan(gdp);
-                break;
-            case ">":
-                condition = greaterThan(gdp);
-                break;
-            case "<=":
-                condition = lessThanOrEqualTo(gdp);
-                break;
-            case ">=":
-                condition = greaterThanOrEqualTo(gdp);
-                break;
-            case "==":
-                condition = equalTo(gdp);
-                break;
-            case "!=":
-                condition = not(equalTo(gdp));
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown operator: " + operator);
-        }
-
-        // Call the helper method
-        verifyGetCountryApiReturnDataWithOperator(operator, gdp, condition);
-    }
-*/
     //------------------------end--------------------------------------
     //Dùng Stream để tạo bộ dữ liệu, dùng Provider để lấy dữ liệu trong bộ dữ liệu đã tạo
     static Stream<Map<String, String>> getCountriesByFilterProvider() throws JsonProcessingException {
@@ -272,7 +190,7 @@ public class GetCountriesApiTest {
         Response actualResponse = RestAssured.given().log().all().queryParams(queryParams).get(GET_COUNTRIES_BY_FILTER);
         System.out.println(actualResponse);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         countries.forEach
                 (country -> {
@@ -328,16 +246,11 @@ public class GetCountriesApiTest {
     }
 //----------------------------------------------------------------------------------
     @Test
-    void verifyGetCountriesWithPrivateKeyResponseJsonSchema(){
-        //String responseBody = RestAssured.get(GET_COUNTRIES_PRIVATE_KEY).getBody().asString();
-        RestAssured.get(GET_COUNTRIES_PRIVATE_KEY).then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/get-countries-with-private-key-json-schema.json"));
-    }
-    @Test
-    void verifyGetCountriesWithPrivateKey(){
+    void verifyGetCountriesWithPrivateKey() {
         Response actualResponse = RestAssured.given().log().all()
-                .header("api-key","private")
+                .header("api-key", "private")
                 .get(GET_COUNTRIES_PRIVATE_KEY);
-        List<CountryVersionThree> countries = actualResponse.as(new TypeRef<List<CountryVersionThree>>() {
+        List<CountryCustomizedModel> countries = actualResponse.as(new TypeRef<List<CountryCustomizedModel>>() {
         });
         assertThat(actualResponse.asString(), jsonEquals(COUNTRY_WITH_PRIVATE_KEY).when(IGNORING_ARRAY_ORDER));
 
