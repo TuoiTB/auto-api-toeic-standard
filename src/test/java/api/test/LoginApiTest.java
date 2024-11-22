@@ -43,7 +43,7 @@ public class LoginApiTest {
     }
 
     @Test
-    void verifyStaffLoginSuccessfull() {
+    void verifyStaffLoginSuccessfully() {
         LoginInput loginInput = new LoginInput("admin", "1234567890");
         Response actualResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
