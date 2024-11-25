@@ -34,6 +34,9 @@ import static org.hamcrest.Matchers.*;
 
 public class LoginApiTest {
     private static final String LOGIN_PATH = "/api/login";
+    private static final String USERNAME = "admin";
+    private static final String PASSWORD = "1234567890";
+    private static final String ERROR_MESSAGE = "Invalid credentials";
 
 
     @BeforeAll
@@ -44,7 +47,7 @@ public class LoginApiTest {
 
     @Test
     void verifyStaffLoginSuccessfully() {
-        LoginInput loginInput = new LoginInput("admin", "1234567890");
+        LoginInput loginInput = new LoginInput(USERNAME, PASSWORD);
         Response actualResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
                 .body(loginInput)
@@ -55,6 +58,103 @@ public class LoginApiTest {
         LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
         assertThat(loginResponse.getToken(), not(blankString()));
         assertThat(loginResponse.getTimeout(), equalTo(120000));
+        System.out.println();
+    }
+
+    @Test
+    void verifyStaffLoginWithInvalidUsername() {
+        LoginInput loginInput = new LoginInput("userInvalid", PASSWORD);
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
+        System.out.println();
+    }
+
+    @Test
+    void verifyStaffLoginWithInvalidPassword() {
+        LoginInput loginInput = new LoginInput(USERNAME, "1");
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
+        System.out.println();
+    }
+
+    @Test
+    void verifyStaffLoginWithInvalidPasswordAndInvalidUsername() {
+        LoginInput loginInput = new LoginInput("1", "1");
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
+        System.out.println();
+    }
+
+    @Test
+    void verifyStaffLoginWithUsernameNull() {
+        LoginInput loginInput = new LoginInput(null, PASSWORD);
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
+        System.out.println();
+    }
+
+    @Test
+    void verifyStaffLoginWithPasswordNull() {
+        LoginInput loginInput = new LoginInput(USERNAME, null);
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
+        System.out.println();
+    }
+
+    @Test
+    void verifyStaffLoginWithUsernameEmpty() {
+        LoginInput loginInput = new LoginInput("", PASSWORD);
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
+        System.out.println();
+    }
+    @Test
+    void verifyStaffLoginWithPasswordEmpty() {
+        LoginInput loginInput = new LoginInput(USERNAME, "");
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .body(loginInput)
+                .post(LOGIN_PATH);
+        assertThat(actualResponse.statusCode(), equalTo(401));
+        //Need to verify schema
+        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+        assertThat(loginResponse.getMessage(), equalTo(ERROR_MESSAGE));
         System.out.println();
     }
 
