@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-public class UserInput {
+public class GetUserResponse{
     private String id;
     private String firstName;
     private String lastName;
@@ -19,5 +19,7 @@ public class UserInput {
     private String phone;
     private String email;
     private String middleName;
-    private List<AddressesInput> addresses;
+    private String createAt;
+    private String updateAt;
+    private List<AddressesResponse> addresses;
 }
