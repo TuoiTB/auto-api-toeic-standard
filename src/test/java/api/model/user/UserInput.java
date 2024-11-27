@@ -1,9 +1,6 @@
 package api.model.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -11,7 +8,8 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-public class UserInput {
+@Builder
+public class UserInput<T> {
     private String id;
     private String firstName;
     private String lastName;
@@ -19,5 +17,16 @@ public class UserInput {
     private String phone;
     private String email;
     private String middleName;
-    private List<AddressesInput> addresses;
+    private List<T> addresses;
+
+    public static UserInput<AddressesInput> getDefault(){
+        UserInput<AddressesInput> userInput = new UserInput<AddressesInput>();
+        userInput.setId("655966c5-21e1-446f-9f75-53e206a4c496");
+        userInput.setFirstName("John");
+        userInput.setLastName("Dow");
+        userInput.setMiddleName("Smith");
+        userInput.setBirthday("20-09-1999");
+        userInput.setPhone("0962065307");
+        return userInput;
+    }
 }

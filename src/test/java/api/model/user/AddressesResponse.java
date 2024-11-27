@@ -9,17 +9,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class AddressesResponse{
+public class AddressesResponse extends AddressesInput{
     private String id;
     private String customerId;
-    private String streetNumber;
-    private String street;
-    private String ward;
-    private String district;
-    private String city;
-    private String state;
-    private String zip;
-    private String country;
     private String createdAt;
     private String updatedAt;
 }

@@ -2,11 +2,11 @@ package api.test;
 
 import api.model.login.LoginInput;
 import api.model.login.LoginResponse;
-import api.model.user.AddressesInput;
-import api.model.user.GetUserResponse;
-import api.model.user.UserInput;
-import api.model.user.CreateUserResponse;
+import api.model.user.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,27 +53,11 @@ public class CreateUserApiTest {
 
     @Test
     void verifyStaffCreateUserSuccessfully() {
-        AddressesInput addresses = new AddressesInput();
-        addresses.setStreetNumber("136");
-        addresses.setStreet("136 Ho Tung Mau Street");
-        addresses.setWard("Phu Dien");
-        addresses.setDistrict("Bac Tu Liem");
-        addresses.setCity("Ha Noi");
-        addresses.setState("Ha Noi");
-        addresses.setZip("10000");
-        addresses.setCountry("VN");
-
-        UserInput user = new UserInput();
-        user.setId("655966c5-21e1-446f-9f75-53e206a4c496");
-        user.setFirstName("John");
-        user.setLastName("Dow");
-        user.setMiddleName("Smith");
-        user.setBirthday("20-09-1999");
+        AddressesInput addresses = AddressesInput.getDefault();
+        UserInput user = UserInput.getDefault();
         String randomEmail = String.format("auto_api_%s@test.com", System.currentTimeMillis());
         user.setEmail(randomEmail);
-        user.setPhone("0962065307");
         user.setAddresses(List.of(addresses));
-
         //Store the moment before execution
         Instant beforeExecution = Instant.now();
 
@@ -99,7 +83,7 @@ public class CreateUserApiTest {
         assertThat(getCreateUserResponse.statusCode(), equalTo(200));
         //TO-DO:verify schema
         //Verify correct data
-        String expectedTemplate = """
+      /*  String expectedTemplate = """
                 {
                     "id": "%s",
                     "firstName": "John",
@@ -127,25 +111,53 @@ public class CreateUserApiTest {
                         }
                     ]
                 }
-                """;
-        String expected = String.format(expectedTemplate, userResponse.getId(), randomEmail, userResponse.getId());
+                """;*/
+     /*   AddressesResponse addressResponse = new AddressesResponse();
+        addressResponse.setCustomerId(userResponse.getId());
+        addressResponse.setStreetNumber("136");
+        addressResponse.setStreet("136 Ho Tung Mau Street");
+        addressResponse.setWard("Phu Dien");
+        addressResponse.setDistrict("Bac Tu Liem");
+        addressResponse.setCity("Ha Noi");
+        addressResponse.setState("Ha Noi");
+        addressResponse.setZip("10000");
+        addressResponse.setCountry("VN");
+
+        GetUserResponse<AddressesResponse>  expectedUser = new GetUserResponse<AddressesResponse>();
+        expectedUser.setId(userResponse.getId());
+        expectedUser.setFirstName("John");
+        expectedUser.setLastName("Dow");
+        expectedUser.setMiddleName("Smith");
+        expectedUser.setBirthday("20-09-1999");
+        expectedUser.setEmail(randomEmail);
+        expectedUser.setPhone("0962065307");
+        expectedUser.setAddresses(List.of(addressResponse));*/
+        ObjectMapper mapper = new ObjectMapper();
+
+        GetUserResponse<AddressesResponse>  expectedUser = mapper.convertValue(user, new TypeReference<GetUserResponse<AddressesResponse>>() {
+        }) ;
+        expectedUser.setId(userResponse.getId());
+        expectedUser.getAddresses().get(0).setCustomerId(userResponse.getId());
+
+        //String expected = String.format(expectedTemplate, userResponse.getId(), randomEmail, userResponse.getId());
         String actualGetCreated = getCreateUserResponse.asString();
             //verify data, ignore some fieds
-        assertThat(actualGetCreated, jsonEquals(expected).whenIgnoringPaths(
+        assertThat(actualGetCreated, jsonEquals(expectedUser).whenIgnoringPaths(
                 "createdAt", "updatedAt", "addresses[*].id", "addresses[*].createdAt", "addresses[*].updatedAt"));
 
             //verify ignore fields which is in before step
-        GetUserResponse actualGetCreatedModel = getCreateUserResponse.as(GetUserResponse.class);
+        GetUserResponse<AddressesResponse> actualGetCreatedModel = getCreateUserResponse.as(new TypeRef<GetUserResponse<AddressesResponse>>() {
+        });
 
         Instant userCreatedAt = Instant.parse(actualGetCreatedModel.getCreatedAt());
         System.out.println(userCreatedAt);
         assertThat(userCreatedAt.isAfter(beforeExecution), equalTo(true));
         assertThat(userCreatedAt.isBefore(Instant.now()), equalTo(true));
 
-        Instant userUpdateddAt = Instant.parse(actualGetCreatedModel.getUpdatedAt());
-        System.out.println(userUpdateddAt);
-        assertThat(userUpdateddAt.isAfter(beforeExecution), equalTo(true));
-        assertThat(userUpdateddAt.isBefore(Instant.now()), equalTo(true));
+        Instant userUpdatedAt = Instant.parse(actualGetCreatedModel.getUpdatedAt());
+        System.out.println(userUpdatedAt);
+        assertThat(userUpdatedAt.isAfter(beforeExecution), equalTo(true));
+        assertThat(userUpdatedAt.isBefore(Instant.now()), equalTo(true));
 
         actualGetCreatedModel.getAddresses().forEach(actualAddress -> {
             assertThat(actualAddress.getId(), not(blankString()));
