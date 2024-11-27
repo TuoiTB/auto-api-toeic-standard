@@ -3,6 +3,7 @@ package api.test;
 import api.model.login.LoginInput;
 import api.model.login.LoginResponse;
 import api.model.user.AddressesInput;
+import api.model.user.GetUserResponse;
 import api.model.user.UserInput;
 import api.model.user.CreateUserResponse;
 import io.restassured.RestAssured;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,15 +64,18 @@ public class CreateUserApiTest {
         addresses.setCountry("VN");
 
         UserInput user = new UserInput();
-        user.setId("125966c5-21e1-446f-9f75-53e206a4c496");
+        user.setId("655966c5-21e1-446f-9f75-53e206a4c496");
         user.setFirstName("John");
         user.setLastName("Dow");
         user.setMiddleName("Smith");
         user.setBirthday("20-09-1999");
         String randomEmail = String.format("auto_api_%s@test.com", System.currentTimeMillis());
         user.setEmail(randomEmail);
-        user.setPhone("0962065317");
+        user.setPhone("0962065307");
         user.setAddresses(List.of(addresses));
+
+        //Store the moment before execution
+        Instant beforeExecution = Instant.now();
 
         Response createUserResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
@@ -91,7 +98,7 @@ public class CreateUserApiTest {
         //verify status code
         assertThat(getCreateUserResponse.statusCode(), equalTo(200));
         //TO-DO:verify schema
-
+        //Verify correct data
         String expectedTemplate = """
                 {
                     "id": "%s",
@@ -99,7 +106,7 @@ public class CreateUserApiTest {
                     "lastName": "Dow",
                     "middleName": "Smith",
                     "birthday": "20-09-1999",
-                    "phone": "0962065317",
+                    "phone": "0962065307",
                     "email": "%s",
                     "createdAt": "",
                     "updatedAt": "",
@@ -123,10 +130,34 @@ public class CreateUserApiTest {
                 """;
         String expected = String.format(expectedTemplate, userResponse.getId(), randomEmail, userResponse.getId());
         String actualGetCreated = getCreateUserResponse.asString();
+            //verify data, ignore some fieds
         assertThat(actualGetCreated, jsonEquals(expected).whenIgnoringPaths(
-                "createdAt","updatedAt","addresses[*].id","addresses[*].createdAt","addresses[*].updatedAt"));
-        System.out.println();
-        //Verify correct data
+                "createdAt", "updatedAt", "addresses[*].id", "addresses[*].createdAt", "addresses[*].updatedAt"));
+
+            //verify ignore fields which is in before step
+        GetUserResponse actualGetCreatedModel = getCreateUserResponse.as(GetUserResponse.class);
+
+        Instant userCreatedAt = Instant.parse(actualGetCreatedModel.getCreatedAt());
+        System.out.println(userCreatedAt);
+        assertThat(userCreatedAt.isAfter(beforeExecution), equalTo(true));
+        assertThat(userCreatedAt.isBefore(Instant.now()), equalTo(true));
+
+        Instant userUpdateddAt = Instant.parse(actualGetCreatedModel.getUpdatedAt());
+        System.out.println(userUpdateddAt);
+        assertThat(userUpdateddAt.isAfter(beforeExecution), equalTo(true));
+        assertThat(userUpdateddAt.isBefore(Instant.now()), equalTo(true));
+
+        actualGetCreatedModel.getAddresses().forEach(actualAddress -> {
+            assertThat(actualAddress.getId(), not(blankString()));
+
+            Instant adrressCreatedAt = Instant.parse(actualAddress.getCreatedAt());
+            assertThat(adrressCreatedAt.isAfter(beforeExecution), equalTo(true));
+            assertThat(adrressCreatedAt.isBefore(Instant.now()), equalTo(true));
+
+            Instant addressUpdatedAt = Instant.parse(actualAddress.getUpdatedAt());
+            assertThat(addressUpdatedAt.isAfter(beforeExecution), equalTo(true));
+            assertThat(addressUpdatedAt.isBefore(Instant.now()), equalTo(true));
+        });
     }
 
     @AfterAll

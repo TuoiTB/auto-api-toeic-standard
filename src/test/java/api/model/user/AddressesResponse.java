@@ -11,6 +11,7 @@ import lombok.Setter;
 @Setter
 public class AddressesResponse{
     private String id;
+    private String customerId;
     private String streetNumber;
     private String street;
     private String ward;
@@ -19,6 +20,6 @@ public class AddressesResponse{
     private String state;
     private String zip;
     private String country;
-    private String createAt;
-    private String updateAt;
+    private String createdAt;
+    private String updatedAt;
 }

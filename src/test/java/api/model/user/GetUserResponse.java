@@ -19,7 +19,7 @@ public class GetUserResponse{
     private String phone;
     private String email;
     private String middleName;
-    private String createAt;
-    private String updateAt;
+    private String createdAt;
+    private String updatedAt;
     private List<AddressesResponse> addresses;
 }
