@@ -11,6 +11,7 @@ import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,24 +35,33 @@ public class CreateUserApiTest {
     private static String TOKEN = "";
 
     private static List<String> createdUserIds = new ArrayList<>();
+    private static long TIMEOUT = -1;
+    private static long TIME_BEFORE_GET_TOKEN = -1;
 
 
     @BeforeAll
     static void setUp() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = 3000;
-//Get token
-        LoginInput loginInput = new LoginInput("admin", "1234567890");
-        Response actualResponse = RestAssured.given().log().all()
-                .header("Content-Type", "application/json")
-                .body(loginInput)
-                .post(LOGIN_PATH);
-        assertThat(actualResponse.statusCode(), equalTo(200));
+    }
 
-        //Need to verify schema
-        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
-        assertThat(loginResponse.getToken(), not(blankString()));
-        TOKEN = "Bearer ".concat(loginResponse.getToken());
+    @BeforeEach
+    void beforeEach() {
+        if (TIMEOUT == -1 || (System.currentTimeMillis() - TIME_BEFORE_GET_TOKEN) > TIMEOUT * 0.8) {
+            //Get token
+            LoginInput loginInput = new LoginInput("admin", "1234567890");
+            TIME_BEFORE_GET_TOKEN = System.currentTimeMillis();
+            Response actualResponse = RestAssured.given().log().all()
+                    .header("Content-Type", "application/json")
+                    .body(loginInput)
+                    .post(LOGIN_PATH);
+            assertThat(actualResponse.statusCode(), equalTo(200));
+
+            LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+            assertThat(loginResponse.getToken(), not(blankString()));
+            TOKEN = "Bearer ".concat(loginResponse.getToken());
+            TIMEOUT = loginResponse.getTimeout();
+        }
     }
 
     @Test
@@ -454,7 +464,7 @@ public class CreateUserApiTest {
                 new ValidationResponse<>("/phone", "must match pattern \"^\\d{10,11}$\"")));
 
         userInput = UserInput.getDefaultWithEmail();
-            userInput.setPhone("0213547891254");
+        userInput.setPhone("0213547891254");
         argumentsList.add(Arguments.arguments("Verify API return 400 when phone is more than 10 or 11 characters", userInput,
                 new ValidationResponse<>("/phone", "must match pattern \"^\\d{10,11}$\"")));
 
@@ -465,7 +475,6 @@ public class CreateUserApiTest {
 
         return argumentsList.stream();
     }
-
 
     @AfterAll
     static void tearDown() {
