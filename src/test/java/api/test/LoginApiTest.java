@@ -30,7 +30,6 @@ public class LoginApiTest {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = 3000;
     }
-
     @Test
     void verifyStaffLoginSuccessfully() {
         LoginInput loginInput = new LoginInput(USERNAME, PASSWORD);
