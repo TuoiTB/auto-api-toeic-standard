@@ -13,8 +13,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +52,7 @@ public class CreateUserApiTest {
     @Test
     void verifyStaffCreateUserSuccessfully() {
         AddressesInput addresses = AddressesInput.getDefault();
-        UserInput user = UserInput.getDefault();
+        UserInput<AddressesInput> user = UserInput.getDefault();
         String randomEmail = String.format("auto_api_%s@test.com", System.currentTimeMillis());
         user.setEmail(randomEmail);
         user.setAddresses(List.of(addresses));
@@ -171,7 +169,80 @@ public class CreateUserApiTest {
             assertThat(addressUpdatedAt.isBefore(Instant.now()), equalTo(true));
         });
     }
+    @Test
+    void verifyStaffCreateUserSuccessfullyWithMultipleAddresses() {
+        AddressesInput addresses1 = AddressesInput.getDefault();
+        AddressesInput addresses2 = AddressesInput.getDefault();
+        addresses2.setStreet("Le Duc Tho");
+        UserInput<AddressesInput> user = UserInput.getDefault();
+        String randomEmail = String.format("auto_api_%s@test.com", System.currentTimeMillis());
+        user.setEmail(randomEmail);
+        user.setAddresses(List.of(addresses1, addresses2));
+        //Store the moment before execution
+        Instant beforeExecution = Instant.now();
 
+        Response createUserResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .body(user)
+                .post(CREATE_USER_PATH);
+        assertThat(createUserResponse.statusCode(), equalTo(200));
+
+        CreateUserResponse userResponse = createUserResponse.as(CreateUserResponse.class);
+        createdUserIds.add(userResponse.getId());
+        System.out.printf("Create user response: %s%n", createUserResponse.asString());
+        assertThat(userResponse.getId(), not(blankString()));
+        assertThat(userResponse.getMessage(), equalTo("Customer created"));
+
+        Response getCreateUserResponse = RestAssured.given().log().all()
+                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .pathParam("id", userResponse.getId())
+                .get(GET_USER_PATH);
+        System.out.printf("Get user response: %s%n", getCreateUserResponse.asString());
+        //verify status code
+        assertThat(getCreateUserResponse.statusCode(), equalTo(200));
+        //TO-DO:verify schema
+
+        //Verify correct data
+        ObjectMapper mapper = new ObjectMapper();
+
+        GetUserResponse<AddressesResponse>  expectedUser = mapper.convertValue(user, new TypeReference<GetUserResponse<AddressesResponse>>() {
+        }) ;
+        expectedUser.setId(userResponse.getId());
+        expectedUser.getAddresses().get(0).setCustomerId(userResponse.getId());
+        expectedUser.getAddresses().get(1).setCustomerId(userResponse.getId());
+
+        String actualGetCreated = getCreateUserResponse.asString();
+        //verify data, ignore some fieds
+        assertThat(actualGetCreated, jsonEquals(expectedUser).whenIgnoringPaths(
+                "createdAt", "updatedAt", "addresses[*].id", "addresses[*].createdAt", "addresses[*].updatedAt"));
+
+        //verify ignore fields which is in before step
+        GetUserResponse<AddressesResponse> actualGetCreatedModel = getCreateUserResponse.as(new TypeRef<GetUserResponse<AddressesResponse>>() {
+        });
+
+        Instant userCreatedAt = Instant.parse(actualGetCreatedModel.getCreatedAt());
+        System.out.println(userCreatedAt);
+        assertThat(userCreatedAt.isAfter(beforeExecution), equalTo(true));
+        assertThat(userCreatedAt.isBefore(Instant.now()), equalTo(true));
+
+        Instant userUpdatedAt = Instant.parse(actualGetCreatedModel.getUpdatedAt());
+        System.out.println(userUpdatedAt);
+        assertThat(userUpdatedAt.isAfter(beforeExecution), equalTo(true));
+        assertThat(userUpdatedAt.isBefore(Instant.now()), equalTo(true));
+
+        actualGetCreatedModel.getAddresses().forEach(actualAddress -> {
+            assertThat(actualAddress.getId(), not(blankString()));
+
+            Instant adrressCreatedAt = Instant.parse(actualAddress.getCreatedAt());
+            assertThat(adrressCreatedAt.isAfter(beforeExecution), equalTo(true));
+            assertThat(adrressCreatedAt.isBefore(Instant.now()), equalTo(true));
+
+            Instant addressUpdatedAt = Instant.parse(actualAddress.getUpdatedAt());
+            assertThat(addressUpdatedAt.isAfter(beforeExecution), equalTo(true));
+            assertThat(addressUpdatedAt.isBefore(Instant.now()), equalTo(true));
+        });
+    }
     @AfterAll
     static void tearDown() {
         //Clean data
