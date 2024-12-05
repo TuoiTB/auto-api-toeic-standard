@@ -24,9 +24,9 @@ public class DbAddresses {
     private String state;
     private String zip;
     private String country;
-    //@JsonSerialize(using = InstantSerializer.class)
+    @JsonSerialize(using = InstantSerializer.class)
     private Instant createdAt;
-    //@JsonSerialize(using = InstantSerializer.class)
+    @JsonSerialize(using = InstantSerializer.class)
     private Instant updatedAt;
 
 }
