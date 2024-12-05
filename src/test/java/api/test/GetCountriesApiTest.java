@@ -1,5 +1,6 @@
 package api.test;
 
+import api.common.RestAssuredSetUp;
 import api.data.GetCountriesData;
 import api.model.country.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -39,8 +40,7 @@ public class GetCountriesApiTest {
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 3000;
+        RestAssuredSetUp.setUp();
     }
 
     @Test

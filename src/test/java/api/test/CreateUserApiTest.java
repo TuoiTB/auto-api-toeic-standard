@@ -1,5 +1,9 @@
 package api.test;
 
+import api.common.ConstantUtils;
+import api.common.DatabaseConnection;
+import api.common.LoginUtils;
+import api.common.RestAssuredSetUp;
 import api.model.login.LoginInput;
 import api.model.login.LoginResponse;
 import api.model.user.*;
@@ -36,56 +40,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class CreateUserApiTest {
-    private static final String LOGIN_PATH = "/api/login";
-    private static final String CREATE_USER_PATH = "/api/user";
-    private static final String DELETE_USER_PATH = "/api/user/{id}";
-    private static final String GET_USER_PATH = "/api/user/{id}";
-    private static final String AUTHOZIZATON_HEADER = "Authorization";
     private static String TOKEN = "";
 
-    private static List<String> createdUserIds = new ArrayList<>();
+    private static final List<String> createdUserIds = new ArrayList<>();
     private static long TIMEOUT = -1;
     private static long TIME_BEFORE_GET_TOKEN = -1;
-    private static SessionFactory sessionFactory;
+    private static final SessionFactory sessionFactory = DatabaseConnection.getSession();
 
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 3000;
-
-        final StandardServiceRegistry registry =
-                new StandardServiceRegistryBuilder()
-                        .build();
-        try {
-            sessionFactory =
-                    new MetadataSources(registry)
-                            .addAnnotatedClass(DbUser.class)
-                            .addAnnotatedClass(DbAddresses.class)
-                            .buildMetadata()
-                            .buildSessionFactory();
-        }
-        catch (Exception e) {
-            // The registry would be destroyed by the SessionFactory, but we
-            // had trouble building the SessionFactory so destroy it manually.
-            StandardServiceRegistryBuilder.destroy(registry);
-        }
+        RestAssuredSetUp.setUp();
     }
 
 
     @BeforeEach
     void beforeEach() {
         if (TIMEOUT == -1 || (System.currentTimeMillis() - TIME_BEFORE_GET_TOKEN) > TIMEOUT * 0.8) {
-            //Get token
-            LoginInput loginInput = new LoginInput("admin", "1234567890");
             TIME_BEFORE_GET_TOKEN = System.currentTimeMillis();
-            Response actualResponse = RestAssured.given().log().all()
-                    .header("Content-Type", "application/json")
-                    .body(loginInput)
-                    .post(LOGIN_PATH);
-            assertThat(actualResponse.statusCode(), equalTo(200));
-
-            LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+            LoginResponse loginResponse = LoginUtils.login();
             assertThat(loginResponse.getToken(), not(blankString()));
             TOKEN = "Bearer ".concat(loginResponse.getToken());
             TIMEOUT = loginResponse.getTimeout();
@@ -102,9 +75,9 @@ public class CreateUserApiTest {
 
         Response createUserResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
-                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                 .body(user)
-                .post(CREATE_USER_PATH);
+                .post(ConstantUtils.CREATE_USER_PATH);
         assertThat(createUserResponse.statusCode(), equalTo(200));
 
         CreateUserResponse userResponse = createUserResponse.as(CreateUserResponse.class);
@@ -114,9 +87,9 @@ public class CreateUserApiTest {
         assertThat(userResponse.getMessage(), equalTo("Customer created"));
 
         Response getCreateUserResponse = RestAssured.given().log().all()
-                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                 .pathParam("id", userResponse.getId())
-                .get(GET_USER_PATH);
+                .get(ConstantUtils.GET_USER_PATH);
         System.out.printf("Get user response: %s%n", getCreateUserResponse.asString());
         //verify status code
         assertThat(getCreateUserResponse.statusCode(), equalTo(200));
@@ -209,6 +182,7 @@ public class CreateUserApiTest {
             assertThat(addressUpdatedAt.isAfter(beforeExecution), equalTo(true));
             assertThat(addressUpdatedAt.isBefore(Instant.now()), equalTo(true));
         });
+        tearDown();
     }
 
     @Test
@@ -225,9 +199,9 @@ public class CreateUserApiTest {
 
         Response createUserResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
-                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                 .body(user)
-                .post(CREATE_USER_PATH);
+                .post(ConstantUtils.CREATE_USER_PATH);
         assertThat(createUserResponse.statusCode(), equalTo(200));
 
         CreateUserResponse userResponse = createUserResponse.as(CreateUserResponse.class);
@@ -237,9 +211,9 @@ public class CreateUserApiTest {
         assertThat(userResponse.getMessage(), equalTo("Customer created"));
 
         Response getCreateUserResponse = RestAssured.given().log().all()
-                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                 .pathParam("id", userResponse.getId())
-                .get(GET_USER_PATH);
+                .get(ConstantUtils.GET_USER_PATH);
         System.out.printf("Get user response: %s%n", getCreateUserResponse.asString());
         //verify status code
         assertThat(getCreateUserResponse.statusCode(), equalTo(200));
@@ -284,6 +258,7 @@ public class CreateUserApiTest {
             assertThat(addressUpdatedAt.isAfter(beforeExecution), equalTo(true));
             assertThat(addressUpdatedAt.isBefore(Instant.now()), equalTo(true));
         });
+        tearDown();
     }
 
 /*    @Test
@@ -370,14 +345,13 @@ public class CreateUserApiTest {
     void verifyRequiredFieldWhenCreatingUser(String testcase, UserInput<AddressesInput> userInput, ValidationResponse expectedResponse) {
         Response createUserResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
-                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                 .body(userInput)
-                .post(CREATE_USER_PATH);
+                .post(ConstantUtils.CREATE_USER_PATH);
         System.out.printf("Create user response: %s%n", createUserResponse.asString());
         assertThat(createUserResponse.statusCode(), equalTo(400));
         ValidationResponse actual = createUserResponse.as(ValidationResponse.class);
         assertThat(actual, samePropertyValuesAs(expectedResponse));
-
     }
 
     static Stream<Arguments> validationUserProvider() throws JsonProcessingException {
@@ -510,9 +484,9 @@ public class CreateUserApiTest {
         Instant beforeExecution = Instant.now();
         Response createUserResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
-                .header(AUTHOZIZATON_HEADER, TOKEN)
+                .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                 .body(user)
-                .post(CREATE_USER_PATH);
+                .post(ConstantUtils.CREATE_USER_PATH);
         System.out.printf("Create user response: %s%n", createUserResponse.asString());
         assertThat(createUserResponse.statusCode(), equalTo(200));
 
@@ -557,6 +531,7 @@ public class CreateUserApiTest {
                 datetimeVerifier(beforeExecution, addressUpdateddAt);
             });
     });
+        tearDown();
 
     }
 
@@ -570,9 +545,9 @@ public class CreateUserApiTest {
         //Clean data
         createdUserIds.forEach(id -> {
             RestAssured.given().log().all()
-                    .header(AUTHOZIZATON_HEADER, TOKEN)
+                    .header(ConstantUtils.AUTHOZIZATON_HEADER, TOKEN)
                     .pathParam("id", id)
-                    .delete(DELETE_USER_PATH);
+                    .delete(ConstantUtils.DELETE_USER_PATH);
         });
     }
 }
