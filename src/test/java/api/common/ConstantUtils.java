@@ -8,5 +8,6 @@ public class ConstantUtils {
     public static final String CREATE_USER_PATH = "/api/user";
     public static final String DELETE_USER_PATH = "/api/user/{id}";
     public static final String GET_USER_PATH = "/api/user/{id}";
+    public static final String PUT_USER_PATH = "/api/user/{id}";
     public static final String AUTHOZIZATON_HEADER = "Authorization";
 }

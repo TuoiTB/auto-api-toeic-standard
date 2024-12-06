@@ -513,12 +513,12 @@ public class CreateUserApiTest {
             System.out.println(dbAddresses);
 
             GetUserResponse<AddressesResponse> actualUser = mapper.convertValue(dbUser, new TypeReference<GetUserResponse<AddressesResponse>>() {
-                });
+            });
             actualUser.setAddresses(mapper.convertValue(dbAddresses,
                     new TypeReference<List<AddressesResponse>>() {
-            }));
+                    }));
             assertThat(actualUser, jsonEquals(expectedUser).whenIgnoringPaths("createdAt", "updatedAt", "addresses[*].id",
-                    "addresses[*].createdAt","addresses[*].updatedAt" ));
+                    "addresses[*].createdAt", "addresses[*].updatedAt"));
             Instant userCreatedAt = Instant.parse(actualUser.getCreatedAt());
             datetimeVerifier(beforeExecution, userCreatedAt);
             Instant userUpdatedAt = Instant.parse(actualUser.getUpdatedAt());
@@ -530,12 +530,12 @@ public class CreateUserApiTest {
                 Instant addressUpdateddAt = Instant.parse(actualAddress.getCreatedAt());
                 datetimeVerifier(beforeExecution, addressUpdateddAt);
             });
-    });
+        });
         tearDown();
 
     }
 
-        private void datetimeVerifier(Instant timeBeforeExecution, Instant actualTime) {
+    private void datetimeVerifier(Instant timeBeforeExecution, Instant actualTime) {
         assertThat(actualTime.isAfter(timeBeforeExecution), equalTo(true));
         assertThat(actualTime.isBefore(Instant.now()), equalTo(true));
     }
