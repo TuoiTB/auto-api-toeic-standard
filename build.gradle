@@ -22,7 +22,7 @@ dependencies {
     testImplementation group: 'org.hibernate.orm', name: 'hibernate-core', version: '6.6.1.Final'
     testImplementation group: 'org.postgresql', name: 'postgresql', version: '42.7.4'
 }
-
 test {
     useJUnitPlatform()
+    jvmArgs '-Dfile.encoding=UTF-8' // Thêm cấu hình mã hóa
 }

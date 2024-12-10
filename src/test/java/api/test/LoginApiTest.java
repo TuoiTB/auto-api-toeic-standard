@@ -1,9 +1,12 @@
 package api.test;
 
 import api.common.RestAssuredSetUp;
+import api.model.login.LoginDataResponse;
 import api.model.login.LoginInput;
 import api.model.login.LoginResponse;
+import api.model.user.CreateUserResponse;
 import io.restassured.RestAssured;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,14 +19,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static api.common.ConstantUtils.*;
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 public class LoginApiTest {
-    private static final String LOGIN_PATH = "/api/login";
-    private static final String USERNAME = "admin";
-    private static final String PASSWORD = "1234567890";
-    private static final String ERROR_MESSAGE = "Invalid credentials";
+    private static final String ERROR_MESSAGE = "Tài khoản hoặc mật khẩu không chính xác";
+    private static final String SUCCESSFULL_MESSAGE = "Thành công";
 
 
     @BeforeAll
@@ -31,15 +34,33 @@ public class LoginApiTest {
         RestAssuredSetUp.setUp();
     }
     @Test
-    void verifyStaffLoginSuccessfully() {
+    void verifyUserLoginSuccessfully() {
         LoginInput loginInput = new LoginInput(USERNAME, PASSWORD);
-        Response actualResponse = RestAssured.given().log().all().header("Content-Type", "application/json").body(loginInput).post(LOGIN_PATH);
+        Response actualResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("Accept-Charset", "UTF-8")
+                .header("Tenant","t/iigvietnam.edu.vn")
+                .body(loginInput)
+                .post(LOGIN_PATH);
         assertThat(actualResponse.statusCode(), equalTo(200));
 
-        //Need to verify schema
-        LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
-        assertThat(loginResponse.getToken(), not(blankString()));
-        assertThat(loginResponse.getTimeout(), equalTo(120000));
+        //Verify schema
+        //LoginResponse loginResponse1 = actualResponse.as(LoginResponse.class);
+        //RestAssured.post(LOGIN_PATH).then().assertThat().body(matchesJsonSchemaInClasspath("json-schema/post-login-json-schema.json"));
+
+        // Deserialize response
+        LoginResponse<LoginDataResponse> loginResponse = actualResponse.as(
+                new TypeRef<LoginResponse<LoginDataResponse>>() {}
+        );
+        //Verify data
+        LoginDataResponse loginDataResponse = loginResponse.getData();
+        assertThat(loginDataResponse.getAccessToken(), not(blankString()));
+        assertThat(loginDataResponse.getRefreshToken(), not(blankString()));
+        assertThat(loginDataResponse.getUserId(), not(blankString()));
+        assertThat(loginDataResponse.getUserName(), not(blankString()));
+        assertThat(loginResponse.getMessage(), not(blankString()));
+        assertThat(loginResponse.getMessage(), equalTo(SUCCESSFULL_MESSAGE));
+        assertThat(loginResponse.getCode(), equalTo("200"));
         System.out.println();
     }
 
